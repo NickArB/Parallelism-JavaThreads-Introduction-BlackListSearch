@@ -6,6 +6,9 @@
 package edu.eci.arsw.blacklistvalidator;
 
 import edu.eci.arsw.spamkeywordsdatasource.HostBlacklistsDataSourceFacade;
+import edu.eci.arsw.threads.ThreadCheck;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -29,7 +32,7 @@ public class HostBlackListsValidator {
      * @param ipaddress suspicious host's IP address.
      * @return  Blacklists numbers where the given host's IP address was found.
      */
-    public List<Integer> checkHost(String ipaddress){
+    public List<Integer> checkHost(String ipaddress, int N){
         
         LinkedList<Integer> blackListOcurrences=new LinkedList<>();
         
@@ -38,16 +41,42 @@ public class HostBlackListsValidator {
         HostBlacklistsDataSourceFacade skds=HostBlacklistsDataSourceFacade.getInstance();
         
         int checkedListsCount=0;
+
+        ArrayList<ThreadCheck> threads = new ArrayList<>();
+
+        int numberOfServers = skds.getRegisteredServersCount();
+
+        int size = numberOfServers/N;
         
-        for (int i=0;i<skds.getRegisteredServersCount() && ocurrencesCount<BLACK_LIST_ALARM_COUNT;i++){
-            checkedListsCount++;
-            
-            if (skds.isInBlackListServer(i, ipaddress)){
-                
-                blackListOcurrences.add(i);
-                
-                ocurrencesCount++;
+        for (int i=0; i<N;i++){
+
+            int a = i*size;
+            int b;
+            if(i==N-1){
+                b = numberOfServers;
+            } else {
+                b = size*(i+1);
             }
+
+            threads.add(new ThreadCheck(HostBlacklistsDataSourceFacade.getInstance(), a, b, ipaddress));
+        }
+
+        for(ThreadCheck thread:threads){
+            thread.start();
+        }
+
+        try{
+            for(ThreadCheck thread:threads){
+                thread.join();
+            }
+        } catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        for(ThreadCheck thread:threads){
+            blackListOcurrences.addAll(thread.getIndexes());
+            ocurrencesCount += thread.getOccurrences();
+            checkedListsCount += thread.getServersChecked();
         }
         
         if (ocurrencesCount>=BLACK_LIST_ALARM_COUNT){
