@@ -1,5 +1,7 @@
 package edu.eci.arsw.threads;
 
+import java.util.LinkedList;
+
 import edu.eci.arsw.spamkeywordsdatasource.HostBlacklistsDataSourceFacade;
 
 public class ThreadCheck extends Thread{
@@ -8,13 +10,16 @@ public class ThreadCheck extends Thread{
     private int rangeLimitA;
     private int rangeLimitB;
     private String ipAdress;
+    private LinkedList<Integer> indexes;
+    private int serversChecked;
 
     private int ocurrences;
 
     public ThreadCheck(HostBlacklistsDataSourceFacade skds, int rangeLimitA, int rangeLimitB, String ipAdress){
         setServerList(skds, rangeLimitA, rangeLimitB);
         setIpToLookFor(ipAdress);
-
+        this.indexes = new LinkedList<>();
+        this.serversChecked = 0;
     }
 
     public static void main(String[] args){
@@ -43,15 +48,25 @@ public class ThreadCheck extends Thread{
 
     public void countOccurrences(){
         ocurrences = 0;
-        for(int i = rangeLimitA; i <= rangeLimitB; i++){
+        for(int i = rangeLimitA; i < rangeLimitB; i++){
+            this.serversChecked++;
             if(skds.isInBlackListServer(i, ipAdress)){
                 ocurrences++;
+                indexes.add(i);
             }
         }
     }
 
     public int getOccurrences(){
         return this.ocurrences;
+    }
+
+    public int getServersChecked() {
+        return serversChecked;
+    }
+
+    public LinkedList<Integer> getIndexes(){
+        return this.indexes;
     }
 
 }
