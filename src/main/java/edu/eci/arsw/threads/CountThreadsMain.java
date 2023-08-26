@@ -7,12 +7,17 @@ package edu.eci.arsw.threads;
 
 /**
  *
- * @author hcadavid
+ * @author NickArB
  */
 public class CountThreadsMain {
     
     public static void main(String a[]){
-        
+        CountThread tA = new CountThread(0, 99);
+        CountThread tB = new CountThread(99, 199);
+        CountThread tC = new CountThread(200, 299);
+        tA.run();
+        tB.run();
+        tC.run();
     }
     
 }
